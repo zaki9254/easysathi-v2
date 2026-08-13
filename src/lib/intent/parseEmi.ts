@@ -1,4 +1,4 @@
-function parseAmount(value: string, unit?: string) {
+function parseAmount(value: string, unit?: string): number {
   const number = Number(value.replace(/,/g, ""));
 
   if (!unit) {
@@ -7,20 +7,11 @@ function parseAmount(value: string, unit?: string) {
 
   const normalizedUnit = unit.toLowerCase();
 
-  if (
-    normalizedUnit === "lakh" ||
-    normalizedUnit === "lakhs" ||
-    normalizedUnit === "lac" ||
-    normalizedUnit === "lacs"
-  ) {
+  if (["lakh", "lakhs", "lac", "lacs"].includes(normalizedUnit)) {
     return number * 100000;
   }
 
-  if (
-    normalizedUnit === "crore" ||
-    normalizedUnit === "crores" ||
-    normalizedUnit === "cr"
-  ) {
+  if (["crore", "crores", "cr"].includes(normalizedUnit)) {
     return number * 10000000;
   }
 
@@ -33,30 +24,26 @@ function parseAmount(value: string, unit?: string) {
 
 export function parseEmiQuery(query: string) {
   const amountMatch = query.match(
-    /(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d+)?)\s*(lakh|lakhs|lac|lacs|crore|crores|cr|k)?/i
-  );
-
-  const yearsMatch = query.match(
-    /(\d+(?:\.\d+)?)\s*(years?|yrs?|yr)\b/i
-  );
-
-  const monthsMatch = query.match(
-    /(\d+(?:\.\d+)?)\s*(months?|mos?)\b/i
+    /(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d+)?)\s*(lakh|lakhs|lac|lacs|crore|crores|cr|k)?/i,
   );
 
   const rateMatch = query.match(
-    /(\d+(?:\.\d+)?)\s*%\s*(?:interest|rate)?/i
+    /(\d+(?:\.\d+)?)\s*%\s*(?:interest|rate)?/i,
+  );
+
+  const yearsMatch = query.match(
+    /(\d+(?:\.\d+)?)\s*(years?|yrs?|yr)\b/i,
+  );
+
+  const monthsMatch = query.match(
+    /(\d+(?:\.\d+)?)\s*(months?|mos?)\b/i,
   );
 
   if (!amountMatch || !rateMatch) {
     return null;
   }
 
-  const principal = parseAmount(
-    amountMatch[1],
-    amountMatch[2]
-  );
-
+  const principal = parseAmount(amountMatch[1], amountMatch[2]);
   const annualRate = Number(rateMatch[1]);
 
   let years: number;

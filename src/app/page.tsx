@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
+import { AnswerCard } from "@/components/answers/AnswerCard";
 import { detectIntent } from "@/lib/intent/detectIntent";
 import { parsePercentageQuery } from "@/lib/intent/parsePercentage";
 import { calculatePercentage } from "@/lib/calculators/percentage";
@@ -47,67 +48,172 @@ const categories = [
   },
 ];
 
+interface Answer {
+  title: string;
+  answer: string;
+  description?: string;
+  details?: {
+    label: string;
+    value: string;
+  }[];
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [answer, setAnswer] = useState<Answer | null>(null);
 
   const handleSearch = (value?: string) => {
-    const searchQuery = value ?? query;
+    const searchQuery = (value ?? query).trim();
 
-    if (!searchQuery.trim()) return;
+    if (!searchQuery) {
+      return;
+    }
 
     const intent = detectIntent(searchQuery);
+
+    // ==========================================
+    // EMI
+    // ==========================================
 
     if (intent === "emi") {
       const parsed = parseEmiQuery(searchQuery);
 
       if (!parsed) {
-        setAnswer(
-          "Please provide the loan amount, interest rate, and loan tenure. Example: EMI for ₹10 lakh for 5 years at 9%.",
-        );
+        setAnswer({
+          title: "I need a little more information",
+          answer:
+            "Please provide the loan amount, interest rate, and loan tenure.",
+          description: "Example: EMI for ₹10 lakh at 9% for 5 years.",
+        });
 
         return;
       }
 
-      const result = calculateEMI(
+      const monthlyEMI = calculateEMI(
         parsed.principal,
         parsed.annualRate,
         parsed.years,
       );
 
-      setAnswer(
-        `Monthly EMI: ₹${Math.round(result.emi).toLocaleString(
+      const totalPayment = monthlyEMI * parsed.years * 12;
+
+      const totalInterest = totalPayment - parsed.principal;
+
+      setAnswer({
+        title: "EMI Calculation",
+
+        answer: `₹${monthlyEMI.toLocaleString("en-IN", {
+          maximumFractionDigits: 0,
+        })}`,
+
+        description: `Your estimated monthly EMI for a ₹${parsed.principal.toLocaleString(
           "en-IN",
-        )} • Total Interest: ₹${Math.round(result.totalInterest).toLocaleString(
-          "en-IN",
-        )}`,
-      );
+        )} loan at ${parsed.annualRate}% for ${parsed.years} years.`,
+
+        details: [
+          {
+            label: "Loan amount",
+            value: `₹${parsed.principal.toLocaleString("en-IN")}`,
+          },
+          {
+            label: "Interest rate",
+            value: `${parsed.annualRate}%`,
+          },
+          {
+            label: "Loan tenure",
+            value: `${parsed.years} years`,
+          },
+          {
+            label: "Total interest",
+            value: `₹${totalInterest.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+          {
+            label: "Total payment",
+            value: `₹${totalPayment.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+        ],
+      });
 
       return;
     }
 
+    // ==========================================
+    // PERCENTAGE
+    // ==========================================
+
     if (intent === "percentage") {
       const parsed = parsePercentageQuery(searchQuery);
 
-      if (parsed) {
-        const result = calculatePercentage(parsed.percentage, parsed.value);
-
-        setAnswer(
-          `${parsed.percentage}% of ₹${parsed.value.toLocaleString(
-            "en-IN",
-          )} = ₹${result.toLocaleString("en-IN")}`,
-        );
+      if (!parsed) {
+        setAnswer({
+          title: "Percentage calculation",
+          answer: "I couldn't understand the numbers.",
+          description: "Try something like: 20% of ₹5,000",
+        });
 
         return;
       }
+
+      const result = calculatePercentage(parsed.percentage, parsed.value);
+
+      setAnswer({
+        title: `${parsed.percentage}% of ₹${parsed.value.toLocaleString(
+          "en-IN",
+        )}`,
+
+        answer: `₹${result.toLocaleString("en-IN")}`,
+
+        description: `This is ${parsed.percentage}% of ₹${parsed.value.toLocaleString(
+          "en-IN",
+        )}.`,
+
+        details: [
+          {
+            label: "Percentage",
+            value: `${parsed.percentage}%`,
+          },
+          {
+            label: "Original value",
+            value: `₹${parsed.value.toLocaleString("en-IN")}`,
+          },
+        ],
+      });
+
+      return;
     }
 
-    setAnswer("I understand your request, but I don't have a tool for it yet.");
+    // ==========================================
+    // UNKNOWN
+    // ==========================================
+
+    setAnswer({
+      title: searchQuery,
+      answer: "I don't have a tool for this yet.",
+      description:
+        "EasySathi is still learning how to handle this type of request.",
+    });
+  };
+
+  const handleSuggestion = (suggestion: string) => {
+    setQuery(suggestion);
+    handleSearch(suggestion);
+  };
+
+  const clearAnswer = () => {
+    setAnswer(null);
+    setQuery("");
   };
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {/* Header */}
+      {/* ==========================================
+          HEADER
+      ========================================== */}
+
       <header className="border-b">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div className="text-xl font-semibold tracking-[-0.03em]">
@@ -132,31 +238,45 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* ==========================================
+          HERO
+      ========================================== */}
+
       <section className="px-6 pb-20 pt-24">
         <div className="mx-auto max-w-4xl text-center">
+          {/* Badge */}
+
           <div className="mb-5 inline-flex items-center rounded-full border bg-muted/50 px-4 py-2 text-sm text-muted-foreground">
             Simple answers. Less searching.
           </div>
+
+          {/* Heading */}
 
           <h1 className="text-4xl font-semibold tracking-[-0.04em] sm:text-5xl md:text-6xl lg:text-7xl">
             What do you want
             <span className="block">help with?</span>
           </h1>
 
+          {/* Description */}
+
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
             Calculate, convert, create or find what you need. Just tell
-            EasySathi what you're looking for.
+            EasySathi what you&apos;re looking for.
           </p>
 
-          {/* Search */}
+          {/* ==========================================
+              SEARCH
+          ========================================== */}
+
           <div className="mx-auto mt-10 max-w-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
 
               <Input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     handleSearch();
@@ -176,38 +296,44 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Suggestions */}
+            {/* ==========================================
+                SUGGESTIONS
+            ========================================== */}
+
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion}
                   type="button"
-                  onClick={() => {
-                    setQuery(suggestion);
-                    handleSearch(suggestion);
-                  }}
+                  onClick={() => handleSuggestion(suggestion)}
                   className="rounded-full border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {suggestion}
                 </button>
               ))}
             </div>
-            {answer && (
-              <div className="mx-auto mt-8 max-w-2xl rounded-2xl border bg-muted/30 p-6 text-left">
-                <p className="text-sm font-medium text-muted-foreground">
-                  EasySathi Answer
-                </p>
 
-                <p className="mt-2 text-2xl font-semibold tracking-tight">
-                  {answer}
-                </p>
-              </div>
+            {/* ==========================================
+                ANSWER
+            ========================================== */}
+
+            {answer && (
+              <AnswerCard
+                title={answer.title}
+                answer={answer.answer}
+                description={answer.description}
+                details={answer.details}
+                onTryAnother={clearAnswer}
+              />
             )}
           </div>
         </div>
       </section>
 
-      {/* Categories */}
+      {/* ==========================================
+          CATEGORIES
+      ========================================== */}
+
       <section id="tools" className="border-t px-6 py-20">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -257,7 +383,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* About */}
+      {/* ==========================================
+          ABOUT
+      ========================================== */}
+
       <section id="about" className="border-t px-6 py-20">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-semibold tracking-[-0.03em]">
@@ -265,17 +394,21 @@ export default function Home() {
           </h2>
 
           <p className="mt-5 leading-7 text-muted-foreground">
-            You shouldn't have to search through multiple websites just to find
-            the right calculator or utility. EasySathi is being built to
+            You shouldn&apos;t have to search through multiple websites just to
+            find the right calculator or utility. EasySathi is being built to
             understand what you need and take you directly to the answer.
           </p>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ==========================================
+          FOOTER
+      ========================================== */}
+
       <footer className="border-t px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
           <p>© 2026 EasySathi</p>
+
           <p>Simple answers. Less searching.</p>
         </div>
       </footer>
