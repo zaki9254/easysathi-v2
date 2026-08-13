@@ -14,6 +14,8 @@ import { useState } from "react";
 import { detectIntent } from "@/lib/intent/detectIntent";
 import { parsePercentageQuery } from "@/lib/intent/parsePercentage";
 import { calculatePercentage } from "@/lib/calculators/percentage";
+import { parseEmiQuery } from "@/lib/intent/parseEmi";
+import { calculateEMI } from "@/lib/calculators/emi";
 
 const suggestions = [
   "Calculate EMI for ₹10 lakh",
@@ -55,6 +57,34 @@ export default function Home() {
     if (!searchQuery.trim()) return;
 
     const intent = detectIntent(searchQuery);
+
+    if (intent === "emi") {
+      const parsed = parseEmiQuery(searchQuery);
+
+      if (!parsed) {
+        setAnswer(
+          "Please provide the loan amount, interest rate, and loan tenure. Example: EMI for ₹10 lakh for 5 years at 9%.",
+        );
+
+        return;
+      }
+
+      const result = calculateEMI(
+        parsed.principal,
+        parsed.annualRate,
+        parsed.years,
+      );
+
+      setAnswer(
+        `Monthly EMI: ₹${Math.round(result.emi).toLocaleString(
+          "en-IN",
+        )} • Total Interest: ₹${Math.round(result.totalInterest).toLocaleString(
+          "en-IN",
+        )}`,
+      );
+
+      return;
+    }
 
     if (intent === "percentage") {
       const parsed = parsePercentageQuery(searchQuery);
