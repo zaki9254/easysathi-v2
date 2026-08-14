@@ -17,6 +17,8 @@ import { parsePercentageQuery } from "@/lib/intent/parsePercentage";
 import { calculatePercentage } from "@/lib/calculators/percentage";
 import { parseEmiQuery } from "@/lib/intent/parseEmi";
 import { calculateEMI } from "@/lib/calculators/emi";
+import { parseConverterQuery } from "@/lib/intent/parseConverter";
+import { convertUnit } from "@/lib/calculators/converter";
 
 const suggestions = [
   "Calculate EMI for ₹10 lakh",
@@ -186,6 +188,149 @@ export default function Home() {
       return;
     }
 
+    // ==========================================
+    // CONVERTER
+    // ==========================================
+
+    if (intent === "converter") {
+      const parsed = parseConverterQuery(searchQuery);
+
+      if (!parsed) {
+        setAnswer({
+          title: "Unit conversion",
+          answer: "I couldn't understand the conversion.",
+          description: "Try something like: 5 feet to cm",
+        });
+
+        return;
+      }
+
+      const lengthUnits = [
+        "mm",
+        "millimeter",
+        "millimeters",
+        "cm",
+        "centimeter",
+        "centimeters",
+        "m",
+        "meter",
+        "meters",
+        "km",
+        "kilometer",
+        "kilometers",
+        "inch",
+        "inches",
+        "ft",
+        "foot",
+        "feet",
+        "yard",
+        "yards",
+        "mile",
+        "miles",
+      ];
+
+      const weightUnits = [
+        "mg",
+        "milligram",
+        "milligrams",
+        "g",
+        "gram",
+        "grams",
+        "kg",
+        "kilogram",
+        "kilograms",
+        "tonne",
+        "ton",
+        "lb",
+        "lbs",
+        "pound",
+        "pounds",
+        "oz",
+        "ounce",
+        "ounces",
+      ];
+
+      const temperatureUnits = [
+        "c",
+        "celsius",
+        "°c",
+        "f",
+        "fahrenheit",
+        "°f",
+        "k",
+        "kelvin",
+        "°k",
+      ];
+
+      const fromUnit = parsed.from.toLowerCase();
+      const toUnit = parsed.to.toLowerCase();
+
+      let category: "length" | "weight" | "temperature";
+
+      if (lengthUnits.includes(fromUnit) && lengthUnits.includes(toUnit)) {
+        category = "length";
+      } else if (
+        weightUnits.includes(fromUnit) &&
+        weightUnits.includes(toUnit)
+      ) {
+        category = "weight";
+      } else if (
+        temperatureUnits.includes(fromUnit) &&
+        temperatureUnits.includes(toUnit)
+      ) {
+        category = "temperature";
+      } else {
+        setAnswer({
+          title: "Unit conversion",
+          answer: "These units cannot be converted together.",
+        });
+
+        return;
+      }
+
+      const result = convertUnit(
+        parsed.value,
+        parsed.from,
+        parsed.to,
+        category,
+      );
+
+      if (result === null) {
+        setAnswer({
+          title: "Unit conversion",
+          answer: "I couldn't calculate this conversion.",
+        });
+
+        return;
+      }
+
+      setAnswer({
+        title: `${parsed.value} ${parsed.from} to ${parsed.to}`,
+        answer: `${result.toLocaleString("en-IN", {
+          maximumFractionDigits: 6,
+        })} ${parsed.to}`,
+        description: `${parsed.value} ${parsed.from} is equal to ${result.toLocaleString(
+          "en-IN",
+          {
+            maximumFractionDigits: 6,
+          },
+        )} ${parsed.to}.`,
+        details: [
+          {
+            label: "From",
+            value: `${parsed.value} ${parsed.from}`,
+          },
+          {
+            label: "To",
+            value: `${result.toLocaleString("en-IN", {
+              maximumFractionDigits: 6,
+            })} ${parsed.to}`,
+          },
+        ],
+      });
+
+      return;
+    }
     // ==========================================
     // UNKNOWN
     // ==========================================

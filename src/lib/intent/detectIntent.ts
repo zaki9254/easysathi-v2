@@ -1,12 +1,10 @@
-export type Intent = "emi" | "percentage" | "unknown";
+export type Intent = "emi" | "percentage" | "converter" | "unknown";
+
 
 export function detectIntent(query: string): Intent {
   const text = query.toLowerCase().trim();
 
-  // ========================================
-  // EMI / LOAN
-  // ========================================
-
+  // EMI
   const hasLoanKeyword =
     /\b(emi|loan|borrow|borrowing|home loan|car loan|personal loan)\b/i.test(
       text,
@@ -17,37 +15,28 @@ export function detectIntent(query: string): Intent {
   const hasTenure =
     /\d+(?:\.\d+)?\s*(?:years?|yrs?|yr|months?|mos?)\b/i.test(text);
 
-  // Examples:
-  // EMI for ₹10 lakh at 9% for 5 years
-  // 10 lakh loan at 9% for 5 years
-  // 10 lakh at 9% for 60 months
-
   if (hasLoanKeyword && hasRate && hasTenure) {
     return "emi";
   }
-
-  // Also support:
-  // 10 lakh at 9% for 5 years
 
   if (hasRate && hasTenure) {
     return "emi";
   }
 
-  // ========================================
-  // PERCENTAGE
-  // ========================================
-
-  // Supports:
-  // 20% of 5000
-  // 15% of 2 crore
-  // 10 percent of 5 lakh
-  // 25 percentage of 10 lakh
-
+  // Percentage
   const percentagePattern =
     /\d+(?:\.\d+)?\s*(?:%|percent|percentage)(?:\s|$)/i;
 
   if (percentagePattern.test(text)) {
     return "percentage";
+  }
+
+  // Converter
+  const converterPattern =
+    /\b(convert|conversion|to)\b.*\b(mm|cm|m|km|inch|inches|ft|foot|feet|yard|mile|mg|g|kg|gram|grams|pound|pounds|lb|lbs|oz|ounce|celsius|fahrenheit|kelvin|°c|°f|°k)\b/i;
+
+  if (converterPattern.test(text)) {
+    return "converter";
   }
 
   return "unknown";
