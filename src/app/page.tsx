@@ -19,12 +19,13 @@ import { parseEmiQuery } from "@/lib/intent/parseEmi";
 import { calculateEMI } from "@/lib/calculators/emi";
 import { parseConverterQuery } from "@/lib/intent/parseConverter";
 import { convertUnit } from "@/lib/calculators/converter";
+import { calculateAge } from "@/lib/calculators/age";
 
 const suggestions = [
   "Calculate EMI for ₹10 lakh",
   "20% of ₹5,000",
   "Convert 5 feet to cm",
-  "Calculate my age",
+  "Calculate my age from 15/08/2000",
 ];
 
 const categories = [
@@ -331,6 +332,54 @@ export default function Home() {
 
       return;
     }
+
+    // ==========================================
+    // AGE
+    // ==========================================
+
+    if (intent === "age") {
+      const dateMatch = searchQuery.match(
+        /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,
+      );
+
+      if (!dateMatch) {
+        setAnswer({
+          title: "Age Calculator",
+          answer: "Please provide your date of birth.",
+          description: "Example: Calculate my age from 15/08/2000",
+        });
+
+        return;
+      }
+
+      const [, day, month, year] = dateMatch;
+
+      const dateOfBirth = `${year}-${month.padStart(2, "0")}-${day.padStart(
+        2,
+        "0",
+      )}`;
+
+      const age = calculateAge(new Date(dateOfBirth));
+
+      setAnswer({
+        title: "Your Age",
+        answer: `${age.years} years`,
+        description: `You are ${age.years} years, ${age.months} months and ${age.days} days old.`,
+        details: [
+          {
+            label: "Date of birth",
+            value: `${day}/${month}/${year}`,
+          },
+          {
+            label: "Age",
+            value: `${age.years} years, ${age.months} months, ${age.days} days`,
+          },
+        ],
+      });
+
+      return;
+    }
+
     // ==========================================
     // UNKNOWN
     // ==========================================

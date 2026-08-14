@@ -1,4 +1,9 @@
-export type Intent = "emi" | "percentage" | "converter" | "unknown";
+export type Intent =
+  | "emi"
+  | "percentage"
+  | "converter"
+  | "age"
+  | "unknown";
 
 
 export function detectIntent(query: string): Intent {
@@ -37,6 +42,14 @@ export function detectIntent(query: string): Intent {
 
   if (converterPattern.test(text)) {
     return "converter";
+  }
+
+    // Age
+  const agePattern =
+    /\b(age|my age|calculate my age|how old am i|born|date of birth|dob)\b/i;
+
+  if (agePattern.test(text)) {
+    return "age";
   }
 
   return "unknown";
