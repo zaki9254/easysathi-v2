@@ -20,12 +20,14 @@ import { calculateEMI } from "@/lib/calculators/emi";
 import { parseConverterQuery } from "@/lib/intent/parseConverter";
 import { convertUnit } from "@/lib/calculators/converter";
 import { calculateAge } from "@/lib/calculators/age";
+import { calculateGST } from "@/lib/calculators/gst";
 
 const suggestions = [
   "Calculate EMI for ₹10 lakh",
   "20% of ₹5,000",
   "Convert 5 feet to cm",
   "Calculate my age from 15/08/2000",
+  "GST on ₹10,000 at 18%",
 ];
 
 const categories = [
@@ -326,6 +328,57 @@ export default function Home() {
             value: `${result.toLocaleString("en-IN", {
               maximumFractionDigits: 6,
             })} ${parsed.to}`,
+          },
+        ],
+      });
+
+      return;
+    }
+
+    // ==========================================
+    // GST
+    // ==========================================
+
+    if (intent === "gst") {
+      const gstMatch = searchQuery.match(
+        /(?:gst|goods and services tax)\s*(?:on|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)\s*(?:at|@)?\s*(\d+(?:\.\d+)?)\s*%?/i,
+      );
+
+      if (!gstMatch) {
+        setAnswer({
+          title: "GST Calculator",
+          answer: "Please provide the amount and GST rate.",
+          description: "Example: GST on ₹10,000 at 18%",
+        });
+
+        return;
+      }
+
+      const amount = Number(gstMatch[1].replace(/,/g, ""));
+      const gstRate = Number(gstMatch[2]);
+
+      const result = calculateGST(amount, gstRate);
+
+      setAnswer({
+        title: "GST Calculation",
+        answer: `₹${result.gstAmount.toLocaleString("en-IN")}`,
+        description: `${gstRate}% GST on ₹${amount.toLocaleString("en-IN")}.`,
+        details: [
+          {
+            label: "Original amount",
+            value: `₹${amount.toLocaleString("en-IN")}`,
+          },
+          {
+            label: "GST rate",
+            value: `${gstRate}%`,
+          },
+          {
+            label: "GST amount",
+            value: `₹${result.gstAmount.toLocaleString("en-IN")}`,
+          },
+          {
+            label: "Total amount",
+            value: `₹${result.totalAmount.toLocaleString("en-IN")}`,
           },
         ],
       });

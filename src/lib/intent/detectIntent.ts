@@ -3,8 +3,8 @@ export type Intent =
   | "percentage"
   | "converter"
   | "age"
+  | "gst"
   | "unknown";
-
 
 export function detectIntent(query: string): Intent {
   const text = query.toLowerCase().trim();
@@ -28,6 +28,14 @@ export function detectIntent(query: string): Intent {
     return "emi";
   }
 
+  // GST
+  const gstPattern =
+    /\b(gst|goods and services tax)\b/i;
+
+  if (gstPattern.test(text)) {
+    return "gst";
+  }
+
   // Percentage
   const percentagePattern =
     /\d+(?:\.\d+)?\s*(?:%|percent|percentage)(?:\s|$)/i;
@@ -44,7 +52,7 @@ export function detectIntent(query: string): Intent {
     return "converter";
   }
 
-    // Age
+  // Age
   const agePattern =
     /\b(age|my age|calculate my age|how old am i|born|date of birth|dob)\b/i;
 
