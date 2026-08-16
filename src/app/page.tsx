@@ -8,6 +8,7 @@ import {
   GraduationCap,
   RefreshCw,
 } from "lucide-react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
@@ -800,34 +801,30 @@ export default function Home() {
             {categories.map((category) => {
               const Icon = category.icon;
 
-              return (
-                <button
-                  key={category.title}
-                  type="button"
-                  onClick={() => {
-                    if (category.title === "Money") {
-                      document
-                        .getElementById("search")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }
+              const categoryLink =
+                category.title === "Money"
+                  ? "/calculators/emi"
+                  : category.title === "Students"
+                    ? "/calculators/percentage"
+                    : category.title === "Converters"
+                      ? "#search"
+                      : "#search";
 
+              return (
+                <Link
+                  key={category.title}
+                  href={categoryLink}
+                  onClick={() => {
                     if (category.title === "Converters") {
                       setQuery("Convert 5 feet to cm");
-                      handleSearch("Convert 5 feet to cm");
+                    }
 
-                      document
-                        .getElementById("search")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }
                     if (category.title === "Documents") {
-                      document
-                        .getElementById("search")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      setQuery("");
                     }
+
                     if (category.title === "Students") {
-                      document
-                        .getElementById("search")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      setQuery("Calculate percentage");
                     }
                   }}
                   className="group rounded-2xl border bg-background p-6 text-left transition-all hover:-translate-y-1 hover:shadow-md"
@@ -848,7 +845,7 @@ export default function Home() {
                     Explore
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                   </div>
-                </button>
+                </Link>
               );
             })}
           </div>
