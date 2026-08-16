@@ -21,6 +21,12 @@ import { parseConverterQuery } from "@/lib/intent/parseConverter";
 import { convertUnit } from "@/lib/calculators/converter";
 import { calculateAge } from "@/lib/calculators/age";
 import { calculateGST } from "@/lib/calculators/gst";
+import { parseSipQuery } from "@/lib/intent/parseSip";
+import { calculateSIP } from "@/lib/calculators/sip";
+import { calculateBMI } from "@/lib/calculators/bmi";
+import { parseBMIQuery } from "@/lib/intent/parseBmi";
+import { parseSalaryQuery } from "@/lib/intent/parseSalary";
+import { calculateSalary } from "@/lib/calculators/salary";
 
 const suggestions = [
   "Calculate EMI for ₹10 lakh",
@@ -434,6 +440,199 @@ export default function Home() {
     }
 
     // ==========================================
+    // SIP
+    // ==========================================
+
+    if (intent === "sip") {
+      const parsed = parseSipQuery(searchQuery);
+
+      if (!parsed) {
+        setAnswer({
+          title: "SIP Calculation",
+          answer: "I couldn't understand the numbers.",
+          description: "Try something like: SIP of ₹5,000 at 12% for 10 years.",
+        });
+
+        return;
+      }
+
+      const result = calculateSIP(
+        parsed.monthlyInvestment,
+        parsed.annualRate,
+        parsed.years,
+      );
+
+      setAnswer({
+        title: "SIP Calculation",
+
+        answer: `₹${result.totalValue.toLocaleString("en-IN", {
+          maximumFractionDigits: 0,
+        })}`,
+
+        description: `Estimated value of investing ₹${parsed.monthlyInvestment.toLocaleString(
+          "en-IN",
+        )} per month at ${parsed.annualRate}% for ${parsed.years} years.`,
+
+        details: [
+          {
+            label: "Monthly investment",
+            value: `₹${parsed.monthlyInvestment.toLocaleString("en-IN")}`,
+          },
+          {
+            label: "Expected return",
+            value: `${parsed.annualRate}%`,
+          },
+          {
+            label: "Investment period",
+            value: `${parsed.years} years`,
+          },
+          {
+            label: "Invested amount",
+            value: `₹${result.investedAmount.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+          {
+            label: "Estimated returns",
+            value: `₹${result.estimatedReturns.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+        ],
+      });
+
+      return;
+    }
+
+    // ==========================================
+    // SALARY
+    // ==========================================
+
+    if (intent === "salary") {
+      const parsed = parseSalaryQuery(searchQuery);
+
+      if (!parsed) {
+        setAnswer({
+          title: "Salary Calculator",
+          answer: "I couldn't understand the salary.",
+          description: "Try something like: ₹50,000 salary with 10% deduction.",
+        });
+
+        return;
+      }
+
+      const result = calculateSalary(
+        parsed.monthlySalary,
+        parsed.deductionPercentage,
+      );
+
+      setAnswer({
+        title: "Salary Calculation",
+
+        answer: `₹${result.monthlyTakeHome.toLocaleString("en-IN", {
+          maximumFractionDigits: 0,
+        })}`,
+
+        description: `Estimated monthly take-home salary from ₹${result.monthlySalary.toLocaleString(
+          "en-IN",
+        )} with ${parsed.deductionPercentage}% deductions.`,
+
+        details: [
+          {
+            label: "Monthly salary",
+            value: `₹${result.monthlySalary.toLocaleString("en-IN")}`,
+          },
+          {
+            label: "Annual salary",
+            value: `₹${result.annualSalary.toLocaleString("en-IN")}`,
+          },
+          {
+            label: "Deduction",
+            value: `${parsed.deductionPercentage}%`,
+          },
+          {
+            label: "Monthly deduction",
+            value: `₹${result.deductionAmount.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+          {
+            label: "Monthly take-home",
+            value: `₹${result.monthlyTakeHome.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+          {
+            label: "Annual take-home",
+            value: `₹${result.annualTakeHome.toLocaleString("en-IN", {
+              maximumFractionDigits: 0,
+            })}`,
+          },
+        ],
+      });
+
+      return;
+    }
+
+    // ==========================================
+    // BMI
+    // ==========================================
+
+    if (intent === "bmi") {
+      const parsed = parseBMIQuery(searchQuery);
+
+      if (!parsed) {
+        setAnswer({
+          title: "BMI Calculator",
+          answer: "I couldn't understand the height and weight.",
+          description:
+            "Try something like: Calculate BMI for 70 kg and 175 cm.",
+        });
+
+        return;
+      }
+
+      const result = calculateBMI(parsed.weightKg, parsed.heightCm);
+
+      if (!result) {
+        setAnswer({
+          title: "BMI Calculator",
+          answer: "I couldn't calculate the BMI.",
+        });
+
+        return;
+      }
+
+      setAnswer({
+        title: "BMI Calculation",
+        answer: `${result.bmi}`,
+        description: `Your BMI is ${result.bmi}.`,
+        details: [
+          {
+            label: "Weight",
+            value: `${parsed.weightKg} kg`,
+          },
+          {
+            label: "Height",
+            value: `${parsed.heightCm.toLocaleString("en-IN", {
+              maximumFractionDigits: 2,
+            })} cm`,
+          },
+          {
+            label: "BMI",
+            value: `${result.bmi}`,
+          },
+          {
+            label: "Category",
+            value: result.category,
+          },
+        ],
+      });
+
+      return;
+    }
+
+    // ==========================================
     // UNKNOWN
     // ==========================================
 
@@ -515,7 +714,7 @@ export default function Home() {
               SEARCH
           ========================================== */}
 
-          <div className="mx-auto mt-10 max-w-2xl">
+          <div id="search" className="mx-auto mt-10 max-w-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
 
@@ -605,6 +804,32 @@ export default function Home() {
                 <button
                   key={category.title}
                   type="button"
+                  onClick={() => {
+                    if (category.title === "Money") {
+                      document
+                        .getElementById("search")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }
+
+                    if (category.title === "Converters") {
+                      setQuery("Convert 5 feet to cm");
+                      handleSearch("Convert 5 feet to cm");
+
+                      document
+                        .getElementById("search")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }
+                    if (category.title === "Documents") {
+                      document
+                        .getElementById("search")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }
+                    if (category.title === "Students") {
+                      document
+                        .getElementById("search")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
                   className="group rounded-2xl border bg-background p-6 text-left transition-all hover:-translate-y-1 hover:shadow-md"
                 >
                   <div className="mb-5 flex size-11 items-center justify-center rounded-xl bg-muted">
